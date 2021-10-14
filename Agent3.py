@@ -55,6 +55,7 @@ class Node:
         return ('({0},{1})'.format(self.position, self.f))
     
     def print_attributes(self):
+        print("Attributes for ", self.position)
         print("neighbors: ", self.nx)
         print("sensed blocked: ", self.cx)
         print("confirmed blocked: ", self.bx)
@@ -101,6 +102,7 @@ class Node:
                 if 0 <= x < len(matrix) and 0 <= y < len(matrix):
                     if hash_map[(x, y)].status == "uncomfirmed":
                         hash_map[(x, y)].status = "empty"
+                        knowledge[x][y] = 0
         if self.nx - self.cx == self.ex:
             self.bx += self.hx
             self.hx = 0
@@ -110,6 +112,7 @@ class Node:
                 if 0 <= x < len(matrix) and 0 <= y < len(matrix):
                     if hash_map[(x, y)].status == "uncomfirmed":
                         hash_map[(x, y)].status = "blocked"
+                        knowledge[x][y] = 1
         if self.hx == 0:
             if self.ex + self.bx == self.nx:
                 print("All is known")
@@ -267,6 +270,9 @@ def implement(matrix, knowledge, path):
                 if c.status == "blocked":
                     current.bx+=1
                     current.hx-=1
+        
+        current.inference(matrix, hash_map)        
+        current.print_attributes()
     return path[len(path)-1]
 
 def repeated(matrix, knowledge, start, end, heuristic="manhattan"):
