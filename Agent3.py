@@ -5,7 +5,8 @@ import math
 import sys
 
 max = sys.maxsize
-
+neighbour_cord = [(-1,-1),(-1,0),(-1,1),(0,-1),(0,1),(1,-1),(1,0),(1,1)]
+neighbour_cardinal = [(-1, 0),(0, -1),(0, 1),(1, 0)]
 
 # Node class for storing position, cost and heuristic for each grid encountered
 class Node:
@@ -26,6 +27,11 @@ class Node:
         self.ex = 0
         # no. of unconfirmed cells
         self.hx = 0
+        # boolean variable to check if the cell has been visited
+        self.visited = False
+        # variable to check if the cell is blocked or unblocked or uncomfirmed - values can be "unconfirmed", "blocked", "empty"
+        self.status = "unconfirmed"
+
 
     # Compare nodes
     def __eq__(self, other):
@@ -47,14 +53,20 @@ class Node:
     # Print node
     def __repr__(self):
         return ('({0},{1})'.format(self.position, self.f))
+    
+    def print_attributes(self):
+        print("neighbors: ", self.nx)
+        print("sensed blocked: ", self.cx)
+        print("confirmed blocked: ", self.bx)
+        print("confirmed empty: ", self.ex)
+        print("unkown: ", self.hx)
 
     #This returns the neighbours of the Node
     def get_neigbours(self, matrix):
-        neighbour_cord = [(-1, 0),(0, -1),(0, 1),(1, 0)]
         current_x = self.position[0]
         current_y = self.position[1]
         neighbours = []
-        for n in neighbour_cord:
+        for n in neighbour_cardinal:
             x = current_x + n[0]
             y = current_y + n[1]
             if 0 <= x < len(matrix) and 0 <= y < len(matrix):
@@ -67,24 +79,45 @@ class Node:
 
     #This returns all the 8 or 3 neighbours of the Node for sensing
     def partial_sensing(self, matrix):
-        neighbour_cord = [(-1,-1),(-1, 0),(-1,1),(0, -1),(0, 1),(1,-1),(1, 0),(1,1)]
         current_x = self.position[0]
         current_y = self.position[1]
-        neighbours = []
         for n in neighbour_cord:
             x = current_x + n[0]
             y = current_y + n[1]
             if 0 <= x < len(matrix) and 0 <= y < len(matrix):
-                c = Node()
-                c.position = (x, y)
+                c = hash_map[(x, y)]
                 c.parent = self
-                neighbours.append(c)
-                self.nx += 1
                 if matrix[x][y] == 1:
                     self.cx += 1
         print("sensed to be blocked:", self.cx)
-        return neighbours
-            
+
+    def inference(self, matrix, hash_map):
+        if self.cx == self.bx:
+            self.ex += self.hx
+            self.hx = 0
+            for n in neighbour_cord:
+                x = self.position[0] + n[0]
+                y = self.position[1] + n[1]
+                if 0 <= x < len(matrix) and 0 <= y < len(matrix):
+                    if hash_map[(x, y)].status == "uncomfirmed":
+                        hash_map[(x, y)].status = "empty"
+        if self.nx - self.cx == self.ex:
+            self.bx += self.hx
+            self.hx = 0
+            for n in neighbour_cord:
+                x = self.position[0] + n[0]
+                y = self.position[1] + n[1]
+                if 0 <= x < len(matrix) and 0 <= y < len(matrix):
+                    if hash_map[(x, y)].status == "uncomfirmed":
+                        hash_map[(x, y)].status = "blocked"
+        if self.hx == 0:
+            if self.ex + self.bx == self.nx:
+                print("All is known")
+    
+    
+
+                    
+        
 
 ####################################################################################
 
@@ -202,32 +235,38 @@ def Astar(knowledge_grid, start, end, flag=True, heuristic="manhattan"):
 
 def implement(matrix, knowledge, path):
     #follow the path provided by A-star and update the knowledge according to the actual grid
+    print(path)
     for itr in  range(1,len(path)):
-        i = path[itr][0]
-        j = path[itr][1]
-        if matrix[i][j] == 1:
-            knowledge[i][j] = 1
+        x = path[itr][0]
+        y = path[itr][1]
+        #get the current node from the hash_map containg all nodes and update visited
+        current = hash_map[(x,y)]
+        current.visited = True
+
+        #if blocked update the knowledge and node
+        if matrix[x][y] == 1:
+            current.status = "blocked"
+            knowledge[x][y] = 1
             return path[itr-1]
-        if i+1<len(matrix):
-            if matrix[i+1][j]==1:
-                knowledge[i+1][j] = 1
-            elif matrix[i+1][j] == 0:
-                knowledge[i+1][j] = 0
-        if j+1<len(matrix):
-            if matrix[i][j+1]==1:
-                knowledge[i][j+1] = 1
-            elif matrix[i][j+1] == 0:
-                knowledge[i][j+1] = 0
-        if i-1>=0:
-            if matrix[i-1][j]==1:
-                knowledge[i-1][j] = 1
-            elif matrix[i-1][j]==0:
-                knowledge[i-1][j] = 0
-        if j-1>=0: 
-            if matrix[i][j-1]==1:
-                knowledge[i][j-1] = 1
-            elif matrix[i][j-1]==0:
-                knowledge[i][j-1] = 0
+        elif matrix[x][y] == 0:
+            current.status = "empty"
+            knowledge[x][y] = 0
+
+        #call partial sensing
+        current.partial_sensing(matrix)
+
+        #update the current node using neighbor 3*3 nodes
+        for n in neighbour_cord:
+            n_x = current.position[0] + n[0]
+            n_y = current.position[1] + n[1]
+            if 0 <= n_x < len(matrix) and 0 <= n_y < len(matrix):
+                c = hash_map[(n_x, n_y)]
+                if c.status == "empty":
+                    current.ex+=1
+                    current.hx-=1
+                if c.status == "blocked":
+                    current.bx+=1
+                    current.hx-=1
     return path[len(path)-1]
 
 def repeated(matrix, knowledge, start, end, heuristic="manhattan"):
@@ -249,6 +288,24 @@ def repeated(matrix, knowledge, start, end, heuristic="manhattan"):
 ####################################################################################
 if __name__ == "__main__":
     grid_len = 10
+
+    hash_map = {}
+    neighbour_cord = [(-1,-1),(-1, 0),(-1,1),(0, -1),(0, 1),(1,-1),(1, 0),(1,1)]
+    for i in range(grid_len):
+        for j in range(grid_len):
+            c = Node((i, j))
+            if (i, j) in [(0, 0), (0, grid_len-1), (grid_len-1, 0), (grid_len-1, grid_len-1)]:
+                c.nx = 3
+                c.hx = c.nx
+            elif i == grid_len - 1 or j == grid_len-1 or i == 0 or j == 0:
+                c.nx = 5
+                c.hx = c.nx
+            else:
+                c.nx = 8
+                c.hx = c.nx
+            hash_map[(i,j)] = c
+
+    # print(hash_map)
 
     #creating random grid world by providing it a p value
     matrix = create_grid(grid_len, 0.26)
