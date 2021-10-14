@@ -115,7 +115,8 @@ class Node:
                         knowledge[x][y] = 1
         if self.hx == 0:
             if self.ex + self.bx == self.nx:
-                print("All is known")
+                # print("All is known")
+                pass
     
     
 
@@ -239,6 +240,11 @@ def Astar(knowledge_grid, start, end, flag=True, heuristic="manhattan"):
 def implement(matrix, knowledge, path):
     #follow the path provided by A-star and update the knowledge according to the actual grid
     print(path)
+    
+    #adding in the actual traversed path
+    if path[0] not in actual_path:
+        actual_path.append(path[0])
+    actual_path.append(path[0])
     for itr in  range(1,len(path)):
         x = path[itr][0]
         y = path[itr][1]
@@ -252,8 +258,13 @@ def implement(matrix, knowledge, path):
             knowledge[x][y] = 1
             return path[itr-1]
         elif matrix[x][y] == 0:
+            #adding in the actual traversed path
+            if path[itr] not in actual_path:
+                actual_path.append(path[itr])
+            actual_path.append(path[itr])
             current.status = "empty"
             knowledge[x][y] = 0
+        
 
         #call partial sensing
         current.partial_sensing(matrix)
@@ -271,11 +282,19 @@ def implement(matrix, knowledge, path):
                     current.bx+=1
                     current.hx-=1
         
-        current.inference(matrix, hash_map)        
-        current.print_attributes()
+        #call inference method
+        current.inference(matrix, hash_map)
+
+        #call inference on neighbours
+        for n in neighbour_cord:
+            n_x = current.position[0] + n[0]
+            n_y = current.position[1] + n[1]
+            if 0 <= n_x < len(matrix) and 0 <= n_y < len(matrix):
+                c = hash_map[(n_x, n_y)]
+                c.inference(matrix, hash_map)
     return path[len(path)-1]
 
-def repeated(matrix, knowledge, start, end, heuristic="manhattan"):
+def agent_3(matrix, knowledge, start, end, heuristic="manhattan"):
     #repeat A-star from the last node where the next node encountered is a block
     while True:
         res = Astar(knowledge, start, end, heuristic)
@@ -286,6 +305,10 @@ def repeated(matrix, knowledge, start, end, heuristic="manhattan"):
             if path[len(path)-1] == last:
                 break
             start = last_Node
+            #adding in shortest path
+            for i in range(path.index(last)):
+                shortest_path.append(path[i])
+
         # if no path found. It means A-star was not able to find a path and the grid is unsolvable
         else:
             break
@@ -294,7 +317,8 @@ def repeated(matrix, knowledge, start, end, heuristic="manhattan"):
 ####################################################################################
 if __name__ == "__main__":
     grid_len = 10
-
+    actual_path = []
+    shortest_path = []
     hash_map = {}
     neighbour_cord = [(-1,-1),(-1, 0),(-1,1),(0, -1),(0, 1),(1,-1),(1, 0),(1,1)]
     for i in range(grid_len):
@@ -326,14 +350,16 @@ if __name__ == "__main__":
     goal = Node()
     goal.position = (grid_len-1, grid_len-1)
 
-    res = repeated(matrix, knowledge, start, goal, "manhattan")
-    print()
+    res = agent_3(matrix, knowledge, start, goal, "manhattan")
+    print(res)
     print("EXPLORED GRIDWORLD")
     print_grid(knowledge)
+    print(actual_path)
+    print(shortest_path)
 
-    #applying A-star from start on complete updated knowledge of the agent
-    start = Node()
-    start.position = (0, 0)
-    res = Astar(knowledge, start, goal, False, "manhattan")
+    # #applying A-star from start on complete updated knowledge of the agent
+    # start = Node()
+    # start.position = (0, 0)
+    # res = Astar(knowledge, start, goal, False, "manhattan")
 
-    print("final path", res)
+    # print("final path", res)
