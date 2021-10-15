@@ -90,26 +90,25 @@ class Node:
                 c.parent = self
                 if matrix[x][y] == 1:
                     self.cx += 1
-        # print("sensed to be blocked:", self.cx)
 
-    def inference(self, matrix, hash_map):
+    def inference(self, grid_len, hash_map):
         if self.cx == self.bx:
             self.ex += self.hx
             self.hx = 0
             for n in neighbour_cord:
                 x = self.position[0] + n[0]
                 y = self.position[1] + n[1]
-                if 0 <= x < len(matrix) and 0 <= y < len(matrix):
+                if 0 <= x < grid_len and 0 <= y < grid_len:
                     if hash_map[(x, y)].status == "uncomfirmed":
                         hash_map[(x, y)].status = "empty"
                         knowledge[x][y] = 0
         if self.nx - self.cx == self.ex:
             self.bx += self.hx
             self.hx = 0
-            for n in neighbour_cord:
+            for n in neighbour_cord:                
                 x = self.position[0] + n[0]
                 y = self.position[1] + n[1]
-                if 0 <= x < len(matrix) and 0 <= y < len(matrix):
+                if 0 <= x < grid_len and 0 <= y < grid_len:
                     if hash_map[(x, y)].status == "uncomfirmed":
                         hash_map[(x, y)].status = "blocked"
                         knowledge[x][y] = 1
@@ -245,7 +244,7 @@ def implement(matrix, knowledge, path):
     if path[0] not in actual_path:
         actual_path.append(path[0])
     actual_path.append(path[0])
-    for itr in  range(1,len(path)):
+    for itr in range(1,len(path)):
         x = path[itr][0]
         y = path[itr][1]
         #get the current node from the hash_map containg all nodes and update visited
@@ -283,7 +282,7 @@ def implement(matrix, knowledge, path):
                     current.hx-=1
         
         #call inference method
-        current.inference(matrix, hash_map)
+        current.inference(grid_len, hash_map)
 
         #call inference on neighbours
         for n in neighbour_cord:
@@ -291,7 +290,21 @@ def implement(matrix, knowledge, path):
             n_y = current.position[1] + n[1]
             if 0 <= n_x < len(matrix) and 0 <= n_y < len(matrix):
                 c = hash_map[(n_x, n_y)]
-                c.inference(matrix, hash_map)
+                c.inference(grid_len, hash_map)
+
+        #call inference on entire path
+        for i in range(itr, len(path)):
+            x = path[itr][0]
+            y = path[itr][1]
+            #get the current node from the hash_map containg all nodes and update visited
+            curr = hash_map[(x,y)]
+            curr.inference(grid_len, hash_map)
+            if curr.status == "blocked":
+                knowledge[x][y] = 1
+                return path[i-1]
+            elif curr.status == "empty":
+                knowledge[x][y] = 0
+
     return path[len(path)-1]
 
 def agent_3(matrix, knowledge, start, end, heuristic="manhattan"):
@@ -322,6 +335,7 @@ if __name__ == "__main__":
     for i in range(grid_len):
         for j in range(grid_len):
             c = Node((i, j))
+            c.status = "uncomfirmed"
             if (i, j) in [(0, 0), (0, grid_len-1), (grid_len-1, 0), (grid_len-1, grid_len-1)]:
                 c.nx = 3
                 c.hx = c.nx
