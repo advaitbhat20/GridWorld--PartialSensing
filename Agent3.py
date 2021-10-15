@@ -90,7 +90,7 @@ class Node:
                 c.parent = self
                 if matrix[x][y] == 1:
                     self.cx += 1
-        print("sensed to be blocked:", self.cx)
+        # print("sensed to be blocked:", self.cx)
 
     def inference(self, matrix, hash_map):
         if self.cx == self.bx:
@@ -239,7 +239,7 @@ def Astar(knowledge_grid, start, end, flag=True, heuristic="manhattan"):
 
 def implement(matrix, knowledge, path):
     #follow the path provided by A-star and update the knowledge according to the actual grid
-    print(path)
+    # print(path)
     
     #adding in the actual traversed path
     if path[0] not in actual_path:
@@ -305,18 +305,16 @@ def agent_3(matrix, knowledge, start, end, heuristic="manhattan"):
             if path[len(path)-1] == last:
                 break
             start = last_Node
-            #adding in shortest path
-            for i in range(path.index(last)):
-                shortest_path.append(path[i])
 
         # if no path found. It means A-star was not able to find a path and the grid is unsolvable
         else:
             break
+        #adding in shortest path
     return path
 
 ####################################################################################
 if __name__ == "__main__":
-    grid_len = 10
+    grid_len = 101
     actual_path = []
     shortest_path = []
     hash_map = {}
@@ -351,15 +349,19 @@ if __name__ == "__main__":
     goal.position = (grid_len-1, grid_len-1)
 
     res = agent_3(matrix, knowledge, start, goal, "manhattan")
-    print(res)
-    print("EXPLORED GRIDWORLD")
-    print_grid(knowledge)
-    print(actual_path)
-    print(shortest_path)
+    if res != None:
+        print("EXPLORED GRIDWORLD")
+        print_grid(knowledge)
+        print("actual path",actual_path)
+        #applying A-star from start on complete updated knowledge of the agent
+        start = Node()
+        start.position = (0, 0)
+        shortest_path = Astar(knowledge, start, goal, False, "manhattan")[0]
 
-    # #applying A-star from start on complete updated knowledge of the agent
-    # start = Node()
-    # start.position = (0, 0)
-    # res = Astar(knowledge, start, goal, False, "manhattan")
+        print("shortest path", shortest_path)
+        print("length of actual path", len(actual_path))
+        print("length of shortest path", len(shortest_path))
+    else:
+        print("NO PATH FOUND")
 
-    # print("final path", res)
+    
