@@ -326,20 +326,27 @@ class NodeAA:
 
     def inference(self, grid_len, hash_map):
         flag = self.bx + self.cx + self.hx == self.nx
+        if self.hx == 0 and flag:
+            if self.ex + self.bx == self.nx:
+                # print("All is known")
+                return
         if (self.cx == self.bx and self.cx != 0) or (self.cx == self.bx and self.visited) and flag :
-            self.ex = self.hx
-            self.hx = 0
             # print("agent at" , self.position)
             for n in neighbour_cord:
                 x = self.position[0] + n[0]
                 y = self.position[1] + n[1]
                 # print("neighbor update", x,y)
                 if 0 <= x < grid_len and 0 <= y < grid_len:
-                    if hash_map[(x, y)].status != "blocked":
+                    if hash_map[(x, y)].status == "unconfirmed":
                         hash_map[(x, y)].status = "empty"
-                        # print("empty!!")
+                        print("confirmed", self.bx)
+                        print("sensed", self.cx)
+                        print("empty!!",x,y)
+                        print("agent:", self.position)
                         knowledge[x][y] = 0
-        if self.nx - self.cx == self.ex and flag:
+                        self.ex = self.hx
+                        self.hx = 0
+        if (self.nx - self.cx == self.ex and self.cx != 0) or  (self.nx - self.cx == self.ex and self.cx == 0 and self.visited) and flag:
             self.bx += self.hx
             self.hx = 0
             # print("2nd inf!!!!")
@@ -350,13 +357,14 @@ class NodeAA:
                     # print("inf", hash_map[(x, y)].status, hash_map[(x,y)].visited)
                     if hash_map[(x, y)].status == "uncomfirmed":
                         hash_map[(x, y)].status = "blocked"
-                        # print("blocked!!")
+                        print("total neigh", self.nx)
+                        print("sensed", self.cx)
+                        print("empty:", self.ex)
+                        print("blocked!!",x,y)
+                        print("agent:", self.position)
                         if knowledge[x][y] == '-':
                             knowledge[x][y] = 1
-        if self.hx == 0 and flag:
-            if self.ex + self.bx == self.nx:
-                # print("All is known")
-                pass
+        
 
 ####################################################################################
 @dataclass(order=True)
@@ -483,21 +491,21 @@ def implementAA(matrix, knowledge, path):
         #call partial sensing
         current.partial_sensing(matrix)
 
-        #update the current node using neighbor 3*3 nodes
-        current.ex = 0
-        current.bx = 0
-        current.hx = current.nx
-        for n in neighbour_cord:
-            n_x = current.position[0] + n[0]
-            n_y = current.position[1] + n[1]
-            if 0 <= n_x < len(matrix) and 0 <= n_y < len(matrix):
-                c = hash_map[(n_x, n_y)]
-                if c.status == "empty":
-                    current.ex+=1
-                    current.hx-=1
-                if c.status == "blocked":
-                    current.bx+=1
-                    current.hx-=1
+        # #update the current node using neighbor 3*3 nodes
+        # current.ex = 0
+        # current.bx = 0
+        # current.hx = current.nx
+        # for n in neighbour_cord:
+        #     n_x = current.position[0] + n[0]
+        #     n_y = current.position[1] + n[1]
+        #     if 0 <= n_x < len(matrix) and 0 <= n_y < len(matrix):
+        #         c = hash_map[(n_x, n_y)]
+        #         if c.status == "empty":
+        #             current.ex+=1
+        #             current.hx-=1
+        #         if c.status == "blocked":
+        #             current.bx+=1
+        #             current.hx-=1
         
         #call inference method
         current.inference(grid_len, hash_map)
@@ -563,11 +571,11 @@ if __name__ == "__main__":
     }
 
     p0 = 34
-    grid_len = 101
+    grid_len = 5
 
-    for i in range(1,p0, 4):
+    for i in range(30,p0, 4):
         iter=i
-        for j in range(40):
+        for j in range(1):
             
             print("iteration", iter)
             result["Probability"].append(iter/100)
@@ -589,6 +597,12 @@ if __name__ == "__main__":
                         c.nx = 8
                         c.hx = c.nx
                     hash_map[(i,j)] = c
+            
+            c = hash_map[(0,0)]
+            c.status = "empty"
+            c = hash_map[(grid_len-1,grid_len-1)]
+            c.status = "empty"
+
 
             # print(hash_map)
 
@@ -598,14 +612,16 @@ if __name__ == "__main__":
             desnity = blocks/(grid_len*grid_len)
             print("density", desnity)
             result["Density"].append(desnity)
-            # print("FULL KNOWN GRIDWORLD")
-            # print_grid(matrix)
+            print("FULL KNOWN GRIDWORLD")
+            print_grid(matrix)
 
             #initializing knowledge of agent
             knowledge = [ [ "-" for i in range(grid_len) ] for j in range(grid_len) ]
             
             start = NodeAA()
             start.position = (0, 0)
+            knowledge[0][0] = 0
+            knowledge[grid_len-1][grid_len-1] = 0
             goal = NodeAA()
             goal.position = (grid_len-1, grid_len-1)
 
@@ -630,8 +646,8 @@ if __name__ == "__main__":
             else:
                 print("NO PATH FOUND")
 
-            # print("EXPLORED GRIDWORLD")
-            # print_grid(knowledge)
+            print("EXPLORED GRIDWORLD")
+            print_grid(knowledge)
             print("Agent 3 blocks encountered", blocks_encounteredA)
             print("length of shortest path", path_len)
             print("Agent 3 trajectory length", total_trajectory_lengthA)
@@ -652,9 +668,9 @@ if __name__ == "__main__":
             goal.position = (grid_len-1, grid_len-1)
 
             res = repeated(matrix, knowledge, start, goal, "manhattan")
-            # print()
-            # print("EXPLORED GRIDWORLD Agent1")
-            # print_grid(knowledge)
+            print()
+            print("EXPLORED GRIDWORLD Agent1")
+            print_grid(knowledge)
 
             #applying A-star from start on complete updated knowledge of the agent
             start = Node()
