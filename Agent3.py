@@ -61,6 +61,9 @@ class Node:
         print("confirmed blocked: ", self.bx)
         print("confirmed empty: ", self.ex)
         print("unkown: ", self.hx)
+        print("visted: ", self.visited)
+        print("status: ", self.status)
+
 
     #This returns the neighbours of the Node
     def get_neigbours(self, matrix):
@@ -92,36 +95,39 @@ class Node:
                     self.cx += 1
 
     def inference(self, grid_len, hash_map):
-        if self.cx == self.bx:
-            self.ex += self.hx
+        flag = self.bx + self.ex + self.hx == self.nx
+        # print(flag)
+        if self.hx == 0 and flag:
+            if self.ex + self.bx == self.nx:
+                # print("All is known")
+                return
+        if (self.cx == self.bx and self.cx != 0) or (self.cx == self.bx and self.visited) and flag :
+            # print("agent at" , self.position)
+            self.ex = self.hx
             self.hx = 0
             for n in neighbour_cord:
                 x = self.position[0] + n[0]
                 y = self.position[1] + n[1]
+                # print("neighbor update", x,y)
+                
                 if 0 <= x < grid_len and 0 <= y < grid_len:
-                    if hash_map[(x, y)].status == "uncomfirmed":
+                    if hash_map[(x, y)].status == "unconfirmed":
                         hash_map[(x, y)].status = "empty"
-                        knowledge[x][y] = 0
-        if self.nx - self.cx == self.ex:
+                        if knowledge[x][y] == '-':
+                            knowledge[x][y] = 0
+        if ((self.nx - self.cx == self.ex and self.cx != 0) or (self.nx - self.cx == self.ex and self.cx == 0 and self.visited)) and flag:
             self.bx += self.hx
             self.hx = 0
             for n in neighbour_cord:                
                 x = self.position[0] + n[0]
                 y = self.position[1] + n[1]
                 if 0 <= x < grid_len and 0 <= y < grid_len:
+                    # print("inf", hash_map[(x, y)].status, hash_map[(x,y)].visited)
                     if hash_map[(x, y)].status == "uncomfirmed":
                         hash_map[(x, y)].status = "blocked"
-                        knowledge[x][y] = 1
-        if self.hx == 0:
-            if self.ex + self.bx == self.nx:
-                # print("All is known")
-                pass
+                        if knowledge[x][y] == '-':
+                            knowledge[x][y] = 1
     
-    
-
-                    
-        
-
 ####################################################################################
 
 #creating a randomized grid world
@@ -250,7 +256,8 @@ def implement(matrix, knowledge, path):
         #get the current node from the hash_map containg all nodes and update visited
         current = hash_map[(x,y)]
         current.visited = True
-
+        #call partial sensing
+        current.partial_sensing(matrix)
         #if blocked update the knowledge and node
         if matrix[x][y] == 1:
             current.status = "blocked"
@@ -263,12 +270,8 @@ def implement(matrix, knowledge, path):
             actual_path.append(path[itr])
             current.status = "empty"
             knowledge[x][y] = 0
-        
 
-        #call partial sensing
-        current.partial_sensing(matrix)
-
-        #update the current node using neighbor 3*3 nodes
+        # update the current node using neighbor 3*3 nodes
         for n in neighbour_cord:
             n_x = current.position[0] + n[0]
             n_y = current.position[1] + n[1]
@@ -292,23 +295,24 @@ def implement(matrix, knowledge, path):
                 c = hash_map[(n_x, n_y)]
                 c.inference(grid_len, hash_map)
 
+        current.inference(grid_len, hash_map)
+
         #call inference on entire path
-        for i in range(itr, len(path)):
-            x = path[itr][0]
-            y = path[itr][1]
-            #get the current node from the hash_map containg all nodes and update visited
-            curr = hash_map[(x,y)]
-            curr.inference(grid_len, hash_map)
-            if curr.status == "blocked":
-                knowledge[x][y] = 1
-                return path[i-1]
-            elif curr.status == "empty":
-                knowledge[x][y] = 0
+        # for i in range(itr, len(path)):
+        #     x = path[itr][0]
+        #     y = path[itr][1]
+        #     #get the current node from the hash_map containg all nodes and update visited
+        #     curr = hash_map[(x,y)]
+        #     curr.inference(grid_len, hash_map)
+        #     if curr.status == "blocked":
+        #         knowledge[x][y] = 1
+        #         return path[i-1]
+        #     elif curr.status == "empty":
+        #         knowledge[x][y] = 0
 
     return path[len(path)-1]
 
 def agent_3(matrix, knowledge, start, end, heuristic="manhattan"):
-    #repeat A-star from the last node where the next node encountered is a block
     while True:
         res = Astar(knowledge, start, end, heuristic)
         path = res[0]
@@ -335,7 +339,7 @@ if __name__ == "__main__":
     for i in range(grid_len):
         for j in range(grid_len):
             c = Node((i, j))
-            c.status = "uncomfirmed"
+            c.status = "unconfirmed"
             if (i, j) in [(0, 0), (0, grid_len-1), (grid_len-1, 0), (grid_len-1, grid_len-1)]:
                 c.nx = 3
                 c.hx = c.nx
@@ -351,6 +355,18 @@ if __name__ == "__main__":
 
     #creating random grid world by providing it a p value
     matrix = create_grid(grid_len, 0.26)
+    # matrix = [
+    #     [0, 0, 1, 1, 1, 0, 0, 0, 0, 0], 
+    #     [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+    #     [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    #     [0, 0, 1, 1, 0, 0, 1, 0, 1, 0],
+    #     [0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+    #     [1, 0, 0, 1, 0, 1, 1, 0, 0, 0],
+    #     [1, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+    #     [0, 0, 1, 1, 1, 0, 0, 1, 1, 0],
+    #     [0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    #     [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    # ]
     print("FULL KNOWN GRIDWORLD")
     print_grid(matrix)
 
@@ -375,7 +391,20 @@ if __name__ == "__main__":
         print("shortest path", shortest_path)
         print("length of actual path", len(actual_path))
         print("length of shortest path", len(shortest_path))
+        for i in range(grid_len):
+            for j in range(grid_len):
+                if (matrix[i][j] != knowledge[i][j] and knowledge[i][j] != '-'):
+                    print(i, j, "mismatch should be ", matrix[i][j], " is ", knowledge[i][j])
+                    hash_map[(i,j)].print_attributes()
+                    break
     else:
+        start = Node()
+        start.position = (0, 0)
+        shortest_path = Astar(matrix, start, goal, False, "manhattan")[0]
+
+        print("shortest path", shortest_path)
         print("NO PATH FOUND")
+
+
 
     

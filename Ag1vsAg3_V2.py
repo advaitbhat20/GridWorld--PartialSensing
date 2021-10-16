@@ -519,18 +519,18 @@ def implementAA(matrix, knowledge, path):
                 c.inference(grid_len, hash_map)
 
         #call inference on entire path
-        for i in range(itr, len(path)):
-            x = path[itr][0]
-            y = path[itr][1]
-            #get the current node from the hash_map containg all nodes and update visited
-            curr = hash_map[(x,y)]
-            curr.inference(grid_len, hash_map)
-            if curr.status == "blocked":
-                print("blocked!!!!")
-                knowledge[x][y] = 1
-                return path[i-1]
-            elif curr.status == "empty":
-                knowledge[x][y] = 0
+        # for i in range(itr, len(path)):
+        #     x = path[itr][0]
+        #     y = path[itr][1]
+        #     #get the current node from the hash_map containg all nodes and update visited
+        #     curr = hash_map[(x,y)]
+        #     curr.inference(grid_len, hash_map)
+        #     if curr.status == "blocked":
+        #         print("blocked!!!!")
+        #         knowledge[x][y] = 1
+        #         return path[i-1]
+        #     elif curr.status == "empty":
+        #         knowledge[x][y] = 0
 
     return path[len(path)-1]
 
@@ -571,7 +571,7 @@ if __name__ == "__main__":
     }
 
     p0 = 34
-    grid_len = 5
+    grid_len = 101
 
     for i in range(30,p0, 4):
         iter=i
