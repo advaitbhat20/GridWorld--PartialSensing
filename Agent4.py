@@ -130,6 +130,30 @@ class Node:
                                 knowledge[x][y] = matrix[x][y]
                                 update_neighbours(x,y, "blocked")
                             hash_map[(x, y)].inference(grid_len, hash_map)
+
+        cross_coords = [(-1, -2), (-1, 2), (1, -2), (1, 2)]
+        if ((self.cx == 2)):
+            for n in cross_coords:
+                flag = True
+                x = self.position[0]
+                y = self.position[1]
+                x2 = self.position[0] + n[0]
+                y2 = self.position[1] + n[1]
+                if (x2, y2) in hash_map:
+                    for ne in neighbour_cord:
+                        n_x = x + ne[0]
+                        n_y = y + ne[1]
+                        n_x2 = x2 + ne[0]
+                        n_y2 = y2 + ne[1]
+                        if (n_x, n_y) in hash_map and (hash_map[(n_x, n_y)].status == "unconfirmed") and (n_x2, n_y2) in hash_map and (hash_map[(n_x2, n_y2)].status == "unconfirmed"):
+                            flag = False
+                    if flag and hash_map[(x2, y2)].cx == 1:
+                        hash_map[(x, y)].hx -= 1
+                        hash_map[(x2, y2)].ex +=1
+                        hash_map[(x2, y2)].hx -= 1
+                        if (x-1, y) in hash_map and (x2+1, y) in hash_map:
+                            knowledge[x-1][y] = matrix[x-1][y]
+                            knowledge[x2+1][y] = matrix[x2+1][y]
     
 ####################################################################################
 ##########################    HELPER FUNCTIONS    ##################################
@@ -316,7 +340,7 @@ def agent_3(matrix, knowledge, start, end, heuristic="manhattan"):
 ####################################################################################
 
 if __name__ == "__main__":
-    grid_len = 101
+    grid_len = 10
     actual_path = []
     shortest_path = []
     hash_map = {} #Dictionary to store nodes
