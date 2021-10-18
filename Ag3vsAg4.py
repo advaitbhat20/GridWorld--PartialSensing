@@ -248,6 +248,7 @@ class NodeAA:
                         if (n_x, n_y) in hash_map and (hash_map[(n_x, n_y)].status == "unconfirmed") and (n_x2, n_y2) in hash_map and (hash_map[(n_x2, n_y2)].status == "unconfirmed"):
                             flag = False
                     if flag and hash_map[(x2, y2)].cx == 1:
+                        hash_map[(x, y)].bx += 1
                         hash_map[(x, y)].hx -= 1
                         hash_map[(x2, y2)].ex +=1
                         hash_map[(x2, y2)].hx -= 1

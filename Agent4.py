@@ -116,7 +116,6 @@ class Node:
                             hash_map[(x, y)].inference(grid_len, hash_map)
                             
         if ((self.nx - self.cx == self.ex and self.cx != 0) or (self.nx - self.cx == self.ex and self.cx == 0 and self.visited)) and self.status != "blocked":
-
             if self.ex + self.hx + self.bx == self.nx:
                 self.bx += self.hx
                 self.hx = 0
@@ -131,7 +130,9 @@ class Node:
                                 update_neighbours(x,y, "blocked")
                             hash_map[(x, y)].inference(grid_len, hash_map)
 
-        cross_coords = [(-1, -2), (-1, 2), (1, -2), (1, 2)]
+
+        #CHESS KNIGHT INFERRENCE - FIGURES 15 -17 Assignment
+        cross_coords = [(-1, -2), (-1, 2), (1, -2), (1, 2), (2, 1), (-2, 1), (2, -1), (-1, -2)]
         if ((self.cx == 2)):
             for n in cross_coords:
                 flag = True
@@ -140,20 +141,91 @@ class Node:
                 x2 = self.position[0] + n[0]
                 y2 = self.position[1] + n[1]
                 if (x2, y2) in hash_map:
-                    for ne in neighbour_cord:
-                        n_x = x + ne[0]
-                        n_y = y + ne[1]
-                        n_x2 = x2 + ne[0]
-                        n_y2 = y2 + ne[1]
-                        if (n_x, n_y) in hash_map and (hash_map[(n_x, n_y)].status == "unconfirmed") and (n_x2, n_y2) in hash_map and (hash_map[(n_x2, n_y2)].status == "unconfirmed"):
-                            flag = False
+                    if x2 > x and y2 > y:
+                        for ne in neighbour_cord:
+                            #CHECKING IF THE REQUIRED NEIGHBORS FLAGS ARE NOT UNCONFIRMED
+                            if (x + ne[0] == x and y + ne[1] > y) or (x + ne[0] > x and y + ne[1] == y) or (x+ne[0] > x and y+ne[1] > y ):
+                                continue
+                            n_x = x + ne[0]
+                            n_y = y + ne[1]
+                            if (n_x, n_y) in hash_map and (hash_map[(n_x, n_y)].status == "unconfirmed"):
+                                flag = False
+                            
+                            #CHECKING IF THE REQUIRED NEIGHBORS FLAGS ARE NOT UNCONFIRMED
+                            if  (x2 + ne[0] < x2 and y2 +ne[1] < y2) or (x2 + ne[0] == x2 and y2 +ne[1] < y2) or (x2 + ne[0] < x2 and y2 +ne[1] == y2):
+                                continue
+                            n_x2 = x2 + ne[0]
+                            n_y2 = y2 + ne[1]
+                            if (n_x2, n_y2) in hash_map and (hash_map[(n_x2, n_y2)].status == "unconfirmed"):
+                                flag = False
+                    if x2 < x and y2 > y:
+                        for ne in neighbour_cord:
+                            #CHECKING IF THE REQUIRED NEIGHBORS FLAGS ARE NOT UNCONFIRMED
+                            if (x + ne[0] < x and y + ne[1] == y) or (x + ne[0] < x and y + ne[1] > y) or (x+ne[0] == x and y+ne[1] > y ):
+                                continue
+                            n_x = x + ne[0]
+                            n_y = y + ne[1]
+                            if (n_x, n_y) in hash_map and (hash_map[(n_x, n_y)].status == "unconfirmed"):
+                                flag = False
+                            
+                            #CHECKING IF THE REQUIRED NEIGHBORS FLAGS ARE NOT UNCONFIRMED
+                            if  (x2 + ne[0] == x2 and y2 +ne[1] < y2) or (x2 + ne[0] > x2 and y2 +ne[1] < y2) or (x2 + ne[0] > x2 and y2 +ne[1] == y2):
+                                continue
+                            n_x2 = x2 + ne[0]
+                            n_y2 = y2 + ne[1]
+                            if (n_x2, n_y2) in hash_map and (hash_map[(n_x2, n_y2)].status == "unconfirmed"):
+                                flag = False
+
+                    #Setting the inferred cells to either 1 or zero, and updating Nodes
                     if flag and hash_map[(x2, y2)].cx == 1:
+                        hash_map[(x, y)].bx += 1
                         hash_map[(x, y)].hx -= 1
                         hash_map[(x2, y2)].ex +=1
                         hash_map[(x2, y2)].hx -= 1
                         if (x-1, y) in hash_map and (x2+1, y) in hash_map:
                             knowledge[x-1][y] = matrix[x-1][y]
                             knowledge[x2+1][y] = matrix[x2+1][y]
+
+
+        #ALTERNATE NEIGHBOR INFERRENCE - FIGURES 17 -19 Assignment
+        alternate_coords = [(0, 2), (2, 0), (-2, 0), (0, -2)]
+        if ((self.cx == 1)):
+            #CHECKING FOR ALL ALTERNATE NEIGHBOURS 
+            for n in alternate_coords:
+                flag = True
+                x = self.position[0]
+                y = self.position[1]
+                x2 = self.position[0] + n[0]
+                y2 = self.position[1] + n[1]
+                if (x2, y2) in hash_map:
+                    if y2 > y:
+                        for ne in neighbour_cord:
+                            if (x + ne[0] == x and y + ne[1] > y) or (x + ne[0] > x and y + ne[1] == y) or (x+ne[0] > x and y+ne[1] > y ):
+                                continue
+                            n_x = x + ne[0]
+                            n_y = y + ne[1]
+                            if (n_x, n_y) in hash_map and (hash_map[(n_x, n_y)].status == "unconfirmed"):
+                                flag = False
+                            if (x2 + ne[0] == x2 and y2 +ne[1] < y2) or (x2 + ne[0] > x2 and y2 +ne[1] < y2) or (x2 + ne[0] > x2 and y2 +ne[1] == y2):
+                                continue
+                            n_x2 = x2 + ne[0]
+                            n_y2 = y2 + ne[1]
+                            if (n_x2, n_y2) in hash_map and (hash_map[(n_x2, n_y2)].status == "unconfirmed"):
+                                flag = False
+                        if flag and hash_map[(x2, y2)].cx == 0:
+                            hash_map[(x,y)].bx += 1
+                            hash_map[(x,y)].hx -= 1
+                            hash_map[(x,y)].ex += 2
+                            hash_map[(x,y)].hx -= 2
+                            hash_map[(x2,y2)].ex += 3
+                            hash_map[(x2,y2)].hx -= 3
+
+                            knowledge[x][y+1] = matrix[x][y+1]
+
+                            knowledge[x2-1][y2] = matrix[x2-1][y2]
+                            knowledge[x2-1][y2+1] = matrix[x2-1][y2+1]
+                            knowledge[x2][y2+1] = matrix[x2][y2+1]
+
     
 ####################################################################################
 ##########################    HELPER FUNCTIONS    ##################################
@@ -317,7 +389,7 @@ def implement(matrix, knowledge, path):
 
     return path[len(path)-1]
 
-def agent_3(matrix, knowledge, start, end, heuristic="manhattan"):
+def agent_4(matrix, knowledge, start, end, heuristic="manhattan"):
     #repeat A-star from the last node where the next node encountered is a block
     while True:
         res = Astar(knowledge, start, end, heuristic)
@@ -388,7 +460,7 @@ if __name__ == "__main__":
     goal.position = (grid_len-1, grid_len-1)
 
     #Call the Agent
-    res = agent_3(matrix, knowledge, start, goal, "manhattan")
+    res = agent_4(matrix, knowledge, start, goal, "manhattan")
 
     #Using A* to find the shortest path on the discovered grid
     start = Node()
